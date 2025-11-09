@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dimensionamento de Exaustão de Cozinha</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Estilo para a fonte Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilos para inputs desativados */
+        input:disabled, select:disabled {
+            background-color: #4b5563; /* gray-600 */
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        /* Estilo customizado para o slider */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6; /* blue-600 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #3b82f6; /* blue-600 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 p-6 md:p-10 min-h-screen">
+
+    <!-- ===== Página Inicial (Splash Screen) ===== -->
+    <div id="splashScreen" class="min-h-screen flex flex-col items-center justify-center text-center p-6 -mt-10">
+        <h1 class="text-5xl md:text-7xl font-bold text-blue-400 mb-4">K-HOTTEXT</h1>
+        <p class="text-lg text-gray-400">Versão 1.0.0</p>
+        <p id="splashDate" class="text-lg text-gray-400 mb-10"><!-- A data será inserida aqui pelo JS --></p>
+        <button id="btnSeguinte" class="bg-blue-600 text-white font-semibold py-3 px-10 rounded-lg text-lg hover:bg-blue-700 transition-transform transform hover:scale-105 shadow-lg">
+            Seguinte
+        </button>
+    </div>
+
+    <!-- ===== Calculadora Principal (Inicialmente Oculta) ===== -->
+    <div id="mainCalculator" class="max-w-5xl mx-auto hidden">
+        <h1 class="text-3xl font-bold text-center text-white mb-8">Calculadora de Dimensionamento de Exaustão</h1>
+
+        <div class="bg-gray-800 rounded-lg shadow-2xl overflow-hidden">
+            <!-- Navegação por Tabs -->
+            <div class="flex border-b border-gray-700">
+                <button id="btnTabVelocidade" class="tab-button flex-1 py-3 px-4 font-semibold text-xs sm:text-sm md:text-base text-center bg-blue-600 text-white" onclick="showTab('tabVelocidade')">
+                    Método Velocidade
+                </button>
+                <button id="btnTabEquipamentos" class="tab-button flex-1 py-3 px-4 font-semibold text-xs sm:text-sm md:text-base text-center bg-gray-700 text-gray-300 hover:bg-gray-600" onclick="showTab('tabEquipamentos')">
+                    Método Equipamentos
+                </button>
+                <button id="btnTabVDI" class="tab-button flex-1 py-3 px-4 font-semibold text-xs sm:text-sm md:text-base text-center bg-gray-700 text-gray-300 hover:bg-gray-600" onclick="showTab('tabVDI')">
+                    Método VDI 2052
+                </button>
+                <button id="btnTabCondutas" class="tab-button flex-1 py-3 px-4 font-semibold text-xs sm:text-sm md:text-base text-center bg-gray-700 text-gray-300 hover:bg-gray-600" onclick="showTab('tabCondutas')">
+                    Dimensionar Conduta
+                </button>
+            </div>
+
+            <!-- Conteúdo das Tabs -->
+            <div class="p-6 md:p-8">
+
+                <!-- ===== Tab 1: Método da Velocidade ===== -->
+                <div id="tabVelocidade" class="tab-content space-y-6">
+                    <p class="text-gray-400 text-sm">Calcule o caudal com base na área livre da hotte e na velocidade de passagem do ar (conforme PDF, pág. 2).</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Coluna de Inputs -->
+                        <div class="space-y-5">
+                            <div>
+                                <label for="tipoConveccao" class="block text-sm font-medium text-gray-300 mb-2">Tipo de Convecção (Sugestão)</label>
+                                <select id="tipoConveccao" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="manual">-- Selecione para sugestão --</option>
+                                    <option value="vapor">Forte Emissão de Vapor (0.2-0.3 m/s)</option>
+                                    <option value="gordura">Forte Emissão de Gorduras (0.4-0.5 m/s)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="tipoHotte" class="block text-sm font-medium text-gray-300 mb-2">Tipo de Hotte</label>
+                                <select id="tipoHotte" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="parede">Parede (1 lado aberto)</option>
+                                    <option value="canto">Canto (2 lados abertos)</option>
+                                    <option value="3lados">Parede (3 lados abertos)</option>
+                                    <option value="ilha">Ilha (4 lados abertos)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="comprimentoL" class="block text-sm font-medium text-gray-300 mb-2">Comprimento (L) (m)</label>
+                                    <input type="number" id="comprimentoL" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3" value="2.0" step="0.1">
+                                </div>
+                                <div>
+                                    <label for="profundidadeP" class="block text-sm font-medium text-gray-300 mb-2">Profundidade (P) (m)</label>
+                                    <input type="number" id="profundidadeP" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3" value="1.0" step="0.1" disabled>
+                                </div>
+                            </div>
+
+                            <!-- ===== CORREÇÃO: Campo "Altura Livre (H)" adicionado ===== -->
+                            <div>
+                                <label for="alturaLivre" class="block text-sm font-medium text-gray-300 mb-2">Altura Livre (H) (m)</label>
+                                <input type="number" id="alturaLivre" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3" value="1.0" step="0.1">
+                                <p class="text-xs text-gray-500 mt-1">Distância entre a hotte e os equipamentos.</p>
+                            </div>
+                            <!-- ======================================================= -->
+
+                            <div>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <label for="velocidadeAr" class="block text-sm font-medium text-gray-300">Velocidade do Ar (m/s)</label>
+                                    <!-- Tooltip Icon -->
+                                    <div class="relative group">
+                                        <!-- Ícone de interrogação -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.502l-1.414 2.25a1 1 0 00.867 1.498H9v1H8a1 1 0 00-1 1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1a1 1 0 00-.867-1.498L9.867 7.502A1 1 0 009 7zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                        </svg>
+                                        <!-- Conteúdo do Tooltip -->
+                                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 w-64 p-3 bg-gray-900 border border-gray-600 rounded-md shadow-lg text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 mb-2">
+                                            Conforme o PDF (pág. 2):
+                                            <ul class="list-disc list-inside mt-1 space-y-1">
+                                                <li><strong>0.2 a 0.3 m/s:</strong> Equipamentos com forte emissão de vapor (fornos, etc.).</li>
+                                                <li><strong>0.4 a 0.5 m/s:</strong> Equipamentos com forte emissão de gorduras (fritadeiras, grelhadores).</li>
+                                            </ul>
+                                            <p class="mt-2">Use o seletor "Tipo de Convecção" acima para uma sugestão automática.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" id="velocidadeAr" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0.2" max="0.5" step="0.01" value="0.35">
+                                    <span id="velocidadeArValor" class="font-mono text-lg text-blue-300 w-20 text-right">0.35 m/s</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">0.2-0.3 (vapor) | 0.4-0.5 (gorduras)</p>
+                            </div>
+                        </div>
+
+                        <!-- Coluna de Resultados -->
+                        <div class="bg-gray-900 p-6 rounded-lg flex flex-col justify-center items-center">
+                            <span class="text-sm font-medium text-gray-400 uppercase">Caudal de Extração</span>
+                            <div id="resultadoVelocidade" class="text-5xl font-bold text-blue-400 my-2">0 m³/h</div>
+                            <span class="text-sm font-medium text-gray-400">Fórmula: Área Livre x Vel. x 3600</span>
+                            <div id="justificacaoVelocidade" class="text-xs text-gray-400 mt-3 text-center h-5"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Tab 2: Método por Equipamentos ===== -->
+                <div id="tabEquipamentos" class="tab-content hidden space-y-6">
+                    <p class="text-gray-400 text-sm">Some os caudais necessários para cada equipamento (conforme PDF, pág. 3). Os valores usados são a média da gama sugerida no documento.</p>
+                    
+                    <!-- Formulário de Adição -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label for="selectEquipamento" class="block text-sm font-medium text-gray-300 mb-2">Equipamento</label>
+                            <select id="selectEquipamento" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3">
+                                <option value="fritadeira">Fritadeira</option>
+                                <option value="grelhador_liso">Grelhador Liso/Ranhurado</option>
+                                <option value="grelhador_pedra">Grelhador Pedra Vulcânica</option>
+                                <option value="fogao">Fogão (por fogo/placa)</option>
+                                <option value="forno_misto">Forno Misto</option>
+                                <option value="forno_pizza">Forno Pizza</option>
+                                <option value="churrasqueira">Churrasqueira (Carvão)</option>
+                                <option value="cozedor_massas">Cozedor de Massas</option>
+                                <option value="marmita">Marmita</option>
+                                <option value="placa_ardente">Placa Ardente</option>
+                                <option value="wok">Wok</option>
+                                <option value="asssador">Assador</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="selectEnergia" class="block text-sm font-medium text-gray-300 mb-2">Energia</label>
+                            <select id="selectEnergia" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3">
+                                <option value="gas">Gás</option>
+                                <option value="electrica">Eléctrica</option>
+                                <option value="outra">Outra (Carvão/Vapor)</option>
+                            </select>
+                        </div>
+                        <button id="addEquipamento" class="w-full md:w-auto bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition h-10">
+                            Adicionar
+                        </button>
+                    </div>
+
+                    <!-- Lista e Totais -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Lista de Equipamentos Adicionados -->
+                        <div class="bg-gray-900 p-4 rounded-lg min-h-[200px]">
+                            <h3 class="font-semibold text-white mb-3">Equipamentos Adicionados:</h3>
+                            <ul id="listaEquipamentos" class="space-y-2 max-h-60 overflow-y-auto">
+                                <li class="text-gray-400 text-center py-10">Nenhum equipamento adicionado.</li>
+                            </ul>
+                        </div>
+
+                        <!-- Resultados -->
+                        <div class="space-y-6">
+                            <div>
+                                <label for="ksimSlider" class="block text-sm font-medium text-gray-300 mb-2">Coeficiente de Simultaneidade (Ksim)</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" id="ksimSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0.5" max="1.0" step="0.05" value="0.8">
+                                    <span id="ksimValor" class="font-mono text-lg text-blue-300 w-16 text-right">0.80</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Este coeficiente (0.5 a 1.0) reduz o caudal total, assumindo que nem todos os equipamentos funcionam à potência máxima ao mesmo tempo. 0.8 é um valor comum para coletividades.</p>
+                            </div>
+
+                            <div class="bg-gray-900 p-6 rounded-lg text-center">
+                                <span class="text-sm font-medium text-gray-400 uppercase">Soma Bruta (sem Ksim)</span>
+                                <div id="totalBrutoEquip" class="text-3xl font-bold text-gray-300 my-1">0 m³/h</div>
+                                
+                                <span class="text-sm font-medium text-gray-400 uppercase mt-4 block">Caudal Final (com Ksim)</span>
+                                <div id="totalFinalEquip" class="text-5xl font-bold text-blue-400 my-1">0 m³/h</div>
+                                <div id="justificacaoEquipamentos" class="text-xs text-gray-400 mt-3 text-center h-5"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Tab 3: Método VDI 2052 ===== -->
+                <div id="tabVDI" class="tab-content hidden space-y-6">
+                    <p class="text-gray-400 text-sm">Calcule o caudal com base no calor sensível (Qs) e latente (Ql) dissipado (conforme VDI 2052, PDF pág. 2).</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Coluna de Inputs -->
+                        <div class="space-y-5">
+                            <div>
+                                <label for="vdiPs" class="block text-sm font-medium text-gray-300 mb-2">Calor Sensível Dissipado (Ps) (kW)</label>
+                                <input type="number" id="vdiPs" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3" value="10" step="0.1">
+                            </div>
+                            <div>
+                                <label for="vdiPl" class="block text-sm font-medium text-gray-300 mb-2">Calor Latente Dissipado (Pl) (kW)</label>
+                                <input type="number" id="vdiPl" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3" value="5" step="0.1">
+                            </div>
+                            <div>
+                                <label for="vdiK1" class="block text-sm font-medium text-gray-300 mb-2">Coef. Simultaneidade (K1)</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" id="vdiK1" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0.7" max="1.0" step="0.05" value="0.8">
+                                    <span id="vdiK1Valor" class="font-mono text-lg text-blue-300 w-16 text-right">0.80</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="vdiK2" class="block text-sm font-medium text-gray-300 mb-2">Coef. Eficácia Captação (K2)</label>
+                                <select id="vdiK2" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3">
+                                    <option value="0.8">Hotte (0.8)</option>
+                                    <option value="1.0">Tecto Filtrante (1.0)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Coluna de Resultados -->
+                        <div class="bg-gray-900 p-6 rounded-lg flex flex-col justify-center space-y-4">
+                            <div class="text-center">
+                                <span class="text-sm font-medium text-gray-400 uppercase">Caudal (Calor Sensível - Qs)</span>
+                                <div id="resultadoVdiQs" class="text-3xl font-bold text-blue-300">0 m³/h</div>
+                                <div id="justificacaoVdiQs" class="text-xs text-gray-400 mt-1 h-5"></div>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-sm font-medium text-gray-400 uppercase">Caudal (Calor Latente - Ql)</span>
+                                <div id="resultadoVdiQl" class="text-3xl font-bold text-blue-300">0 m³/h</div>
+                                <div id="justificacaoVdiQl" class="text-xs text-gray-400 mt-1 h-5"></div>
+                            </div>
+                            <hr class="border-gray-600"/>
+                            <div class="text-center">
+                                <span class="text-sm font-medium text-gray-400 uppercase">Caudal de Extração Final</span>
+                                <div id="resultadoVdiFinal" class="text-5xl font-bold text-blue-400 my-2">0 m³/h</div>
+                                <span class="text-sm font-medium text-gray-400">(O maior valor entre Qs e Ql)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ===== Tab 4: Dimensionar Condutas ===== -->
+                <div id="tabCondutas" class="tab-content hidden space-y-6">
+                    <p class="text-gray-400 text-sm">Determine o diâmetro da conduta circular com base no caudal total (conforme Tabela de Seleção Rápida, pág. 3). Velocidade de referência: ~7 m/s.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="caudalParaConduta" class="block text-sm font-medium text-gray-300 mb-2">Caudal Total Calculado (m³/h)</label>
+                            <input type="number" id="caudalParaConduta" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3" placeholder="Insira o caudal (ex: 3000)">
+                        </div>
+
+                        <div class="bg-gray-900 p-6 rounded-lg flex flex-col justify-center items-center h-full">
+                            <span class="text-sm font-medium text-gray-400 uppercase">Diâmetro da Conduta</span>
+                            <div id="resultadoConduta" class="text-5xl font-bold text-blue-400 my-2">--- mm</div>
+                            <div id="justificacaoConduta" class="text-xs text-gray-400 mt-3 text-center h-5"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <footer class="text-center text-gray-500 text-xs mt-6">
+            Aplicação criada com base no documento "dimensionamentos caudal hottes.pdf".
+        </footer>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // ===== DADOS (Baseados no PDF) =====
+        
+        // Dados para Método por Equipamentos (Valores médios das gamas)
+        const equipmentData = {
+            'fritadeira': { 'gas': 1750, 'electrica': 1475, 'outra': 1475 },
+            'grelhador_liso': { 'gas': 1750, 'electrica': 1475, 'outra': 1475 },
+            'grelhador_pedra': { 'gas': 2500, 'electrica': 2100, 'outra': 2100 },
+            'fogao': { 'gas': 250, 'electrica': 200, 'outra': 200 }, // Por fogo/placa
+            'forno_misto': { 'gas': 1150, 'electrica': 975, 'outra': 975 },
+            'forno_pizza': { 'gas': 800, 'electrica': 675, 'outra': 675 },
+            'churrasqueira': { 'gas': 2500, 'electrica': 2500, 'outra': 2500 }, // /ml
+            'cozedor_massas': { 'gas': 1000, 'electrica': 875, 'outra': 1000 },
+            'marmita': { 'gas': 1250, 'electrica': 1050, 'outra': 1050 },
+            'placa_ardente': { 'gas': 300, 'electrica': 250, 'outra': 250 },
+            'wok': { 'gas': 1250, 'electrica': 1050, 'outra': 1050 },
+            'asssador': { 'gas': 1500, 'electrica': 1275, 'outra': 1275 }
+            // Máquinas de lavar removidas conforme solicitado
+        };
+
+        // Dados para Tabela de Condutas
+        const ductData = [
+            { caudal: 500, diametro: 160 },
+            { caudal: 800, diametro: 200 },
+            { caudal: 1300, diametro: 250 },
+            { caudal: 2000, diametro: 315 },
+            { caudal: 2500, diametro: 355 },
+            { caudal: 3200, diametro: 400 },
+            { caudal: 4000, diametro: 450 },
+            { caudal: 5000, diametro: 500 },
+            { caudal: 7100, diametro: 560 },
+            { caudal: 9000, diametro: 630 },
+            { caudal: 11500, diametro: 710 }
+        ];
+
+        // Constantes VDI 2052 (PDF pág. 2)
+        const VDI_k = 1.2;    // Massa volúmica de ar (kg/m³)
+        const VDI_Cp = 0.35;  // Calor de massa de ar (kW/kg°C)
+        const VDI_L = 0.7;    // Calor de latente do ar (kW/kg)
+        const VDI_DeltaT = 8;   // Diferença de temperatura (°C)
+        const VDI_DeltaX = 5;   // Diferença de massa de água (g/kg a.s)
+        const VDI_DeltaX_kg = VDI_DeltaX / 1000; // Convertido para kg/kg
+
+
+        // ===== ESTADO DA APLICAÇÃO =====
+        let addedEquipment = []; // Array para guardar { nome, caudal, id }
+        let nextEquipmentId = 0;
+
+        // ===== REFERÊNCIAS DOM =====
+        // -- Página Inicial --
+        const splashScreenEl = document.getElementById('splashScreen');
+        const mainCalculatorEl = document.getElementById('mainCalculator');
+        const btnSeguinteEl = document.getElementById('btnSeguinte');
+        const splashDateEl = document.getElementById('splashDate');
+        
+        // -- Calculadora --
+        const tabContents = document.querySelectorAll('.tab-content');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        
+        // Tab 1: Velocidade
+        const tipoConveccaoEl = document.getElementById('tipoConveccao');
+        const tipoHotteEl = document.getElementById('tipoHotte');
+        const comprimentoLEl = document.getElementById('comprimentoL');
+        const profundidadePEl = document.getElementById('profundidadeP');
+        const alturaLivreEl = document.getElementById('alturaLivre');
+        const velocidadeArEl = document.getElementById('velocidadeAr');
+        const velocidadeArValorEl = document.getElementById('velocidadeArValor');
+        const resultadoVelocidadeEl = document.getElementById('resultadoVelocidade');
+        const justificacaoVelocidadeEl = document.getElementById('justificacaoVelocidade');
+
+        // Tab 2: Equipamentos
+        const selectEquipamentoEl = document.getElementById('selectEquipamento');
+        const selectEnergiaEl = document.getElementById('selectEnergia');
+        const addEquipamentoBtn = document.getElementById('addEquipamento');
+        const listaEquipamentosEl = document.getElementById('listaEquipamentos');
+        const ksimSliderEl = document.getElementById('ksimSlider');
+        const ksimValorEl = document.getElementById('ksimValor');
+        const totalBrutoEquipEl = document.getElementById('totalBrutoEquip');
+        const totalFinalEquipEl = document.getElementById('totalFinalEquip');
+        const justificacaoEquipamentosEl = document.getElementById('justificacaoEquipamentos');
+
+        // Tab 3: VDI 2052
+        const vdiPsEl = document.getElementById('vdiPs');
+        const vdiPlEl = document.getElementById('vdiPl');
+        const vdiK1El = document.getElementById('vdiK1');
+        const vdiK1ValorEl = document.getElementById('vdiK1Valor');
+        const vdiK2El = document.getElementById('vdiK2');
+        const resultadoVdiQsEl = document.getElementById('resultadoVdiQs');
+        const justificacaoVdiQsEl = document.getElementById('justificacaoVdiQs');
+        const resultadoVdiQlEl = document.getElementById('resultadoVdiQl');
+        const justificacaoVdiQlEl = document.getElementById('justificacaoVdiQl');
+        const resultadoVdiFinalEl = document.getElementById('resultadoVdiFinal');
+
+        // Tab 4: Condutas
+        const caudalParaCondutaEl = document.getElementById('caudalParaConduta');
+        const resultadoCondutaEl = document.getElementById('resultadoConduta');
+        const justificacaoCondutaEl = document.getElementById('justificacaoConduta');
+
+        // ===== LÓGICA DE NAVEGAÇÃO =====
+        function showTab(tabId) {
+            // Esconde todos os conteúdos
+            tabContents.forEach(tab => tab.classList.add('hidden'));
+            // Atualiza estilo dos botões
+            tabButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600');
+            });
+            
+            // Mostra o conteúdo da tab ativa
+            const tabToShow = document.getElementById(tabId);
+            if(tabToShow) tabToShow.classList.remove('hidden');
+            
+            // Atualiza estilo do botão ativo
+            const activeButton = document.getElementById('btn' + tabId.charAt(0).toUpperCase() + tabId.slice(1));
+            if(activeButton) {
+                activeButton.classList.add('bg-blue-600', 'text-white');
+                activeButton.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600');
+            }
+        }
+        // Anexar ao 'window' para ser acessível pelo HTML 'onclick'
+        window.showTab = showTab;
+
+        // ===== LÓGICA TAB 1: MÉTODO DA VELOCIDADE =====
+        
+        function suggestVelocity() {
+            if (tipoConveccaoEl.value === 'vapor') {
+                velocidadeArEl.value = 0.25; // Média de 0.2-0.3
+            } else if (tipoConveccaoEl.value === 'gordura') {
+                velocidadeArEl.value = 0.45; // Média de 0.4-0.5
+            }
+            calculateVelocity(); // Recalcula com o novo valor
+        }
+        
+        function updateVelocityInputs() {
+            if(!tipoHotteEl) return; // Verificação de segurança
+            
+            const tipoHotte = tipoHotteEl.value;
+            
+            // Ativa/Desativa inputs com base no tipo de hotte
+            switch(tipoHotte) {
+                case 'parede': // L x Altura
+                    comprimentoLEl.disabled = false;
+                    profundidadePEl.disabled = true;
+                    profundidadePEl.value = '';
+                    break;
+                case 'canto': // (L + P) x Altura
+                    comprimentoLEl.disabled = false;
+                    profundidadePEl.disabled = false;
+                    break;
+                case '3lados': // (L + 2xP) x Altura
+                    comprimentoLEl.disabled = false;
+                    profundidadePEl.disabled = false;
+                    break;
+                case 'ilha': // 2 x (L + P) x Altura
+                    comprimentoLEl.disabled = false;
+                    profundidadePEl.disabled = false;
+                    break;
+            }
+            calculateVelocity();
+        }
+
+        function calculateVelocity() {
+            // Verificação de segurança adicionada
+            if (!tipoHotteEl || !comprimentoLEl || !profundidadePEl || !alturaLivreEl || !velocidadeArEl || !resultadoVelocidadeEl || !justificacaoVelocidadeEl) {
+                // Esta verificação agora deve passar, pois alturaLivreEl existe
+                console.error("calculateVelocity: Um ou mais elementos do DOM não foram encontrados.");
+                return;
+            }
+            
+            const tipoHotte = tipoHotteEl.value;
+            const L = parseFloat(comprimentoLEl.value) || 0;
+            const P = parseFloat(profundidadePEl.value) || 0;
+            const H = parseFloat(alturaLivreEl.value) || 0; // Este elemento estava em falta
+            const V = parseFloat(velocidadeArEl.value) || 0;
+            
+            let areaLivre = 0;
+            
+            switch(tipoHotte) {
+                case 'parede': areaLivre = L * H; break;
+                case 'canto': areaLivre = (L + P) * H; break;
+                case '3lados': areaLivre = (L + 2 * P) * H; break;
+                case 'ilha': areaLivre = 2 * (L + P) * H; break;
+            }
+
+            const caudal = areaLivre * V * 3600;
+            resultadoVelocidadeEl.textContent = `${Math.round(caudal)} m³/h`;
+            
+            // Justificação
+            justificacaoVelocidadeEl.textContent = `(${areaLivre.toFixed(2)} m²) x (${V.toFixed(2)} m/s) x 3600 = ${Math.round(caudal)} m³/h`;
+
+            // Sincronizar valor do slider
+            velocidadeArValorEl.textContent = `${V.toFixed(2)} m/s`;
+
+            // Passa o valor para a tab 4 (Condutas)
+            if (caudalParaCondutaEl && caudal > 0) {
+                caudalParaCondutaEl.value = Math.round(caudal);
+                calculateDuct();
+            }
+        }
+
+        // ===== LÓGICA TAB 2: MÉTODO POR EQUIPAMENTOS =====
+
+        function renderEquipmentList() {
+            if(!listaEquipamentosEl) return;
+            if (addedEquipment.length === 0) {
+                listaEquipamentosEl.innerHTML = '<li class="text-gray-400 text-center py-10">Nenhum equipamento adicionado.</li>';
+                return;
+            }
+            
+            listaEquipamentosEl.innerHTML = '';
+            addedEquipment.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center bg-gray-700 p-3 rounded-md';
+                li.innerHTML = `
+                    <span class="text-sm">
+                        ${item.nome} 
+                        <span class="text-xs text-gray-400">(${item.energia})</span>
+                    </span>
+                    <div class="flex items-center gap-3">
+                        <span class="font-semibold text-blue-300">${item.caudal} m³/h</span>
+                        <button class="text-red-400 hover:text-red-300" onclick="removeEquipment(${item.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                `;
+                listaEquipamentosEl.appendChild(li);
+            });
+        }
+
+        function calculateEquipmentTotal() {
+            if(!ksimSliderEl || !ksimValorEl || !totalBrutoEquipEl || !totalFinalEquipEl || !justificacaoEquipamentosEl) return;
+            
+            const ksim = parseFloat(ksimSliderEl.value);
+            ksimValorEl.textContent = ksim.toFixed(2);
+
+            const totalBruto = addedEquipment.reduce((sum, item) => sum + item.caudal, 0);
+            const totalFinal = totalBruto * ksim;
+
+            totalBrutoEquipEl.textContent = `${Math.round(totalBruto)} m³/h`;
+            totalFinalEquipEl.textContent = `${Math.round(totalFinal)} m³/h`;
+
+            // Justificação
+            justificacaoEquipamentosEl.textContent = `(${Math.round(totalBruto)} m³/h) x (${ksim.toFixed(2)}) = ${Math.round(totalFinal)} m³/h`;
+
+            // Passa o valor para a tab 4 (Condutas)
+            if (caudalParaCondutaEl && totalFinal > 0) {
+                caudalParaCondutaEl.value = Math.round(totalFinal);
+                calculateDuct();
+            }
+        }
+
+        function addEquipment() {
+            if(!selectEquipamentoEl || !selectEnergiaEl) return;
+            
+            const equipKey = selectEquipamentoEl.value;
+            const energiaKey = selectEnergiaEl.value;
+            
+            const equipNome = selectEquipamentoEl.options[selectEquipamentoEl.selectedIndex].text;
+            const energiaNome = selectEnergiaEl.options[selectEnergiaEl.selectedIndex].text;
+
+            if (equipmentData[equipKey] && equipmentData[equipKey][energiaKey] !== undefined) {
+                const caudal = equipmentData[equipKey][energiaKey];
+                addedEquipment.push({
+                    id: nextEquipmentId++,
+                    nome: equipNome,
+                    energia: energiaNome,
+                    caudal: caudal
+                });
+                renderEquipmentList();
+                calculateEquipmentTotal();
+            } else {
+                console.warn(`Combinação não encontrada: ${equipKey}, ${energiaKey}`);
+            }
+        }
+
+        // Função global para o botão de remover
+        window.removeEquipment = function(id) {
+            addedEquipment = addedEquipment.filter(item => item.id !== id);
+            renderEquipmentList();
+            calculateEquipmentTotal();
+        }
+
+        // ===== LÓGICA TAB 3: MÉTODO VDI 2052 =====
+        function calculateVDI() {
+            if(!vdiPsEl || !vdiPlEl || !vdiK1El || !vdiK2El || !vdiK1ValorEl || !resultadoVdiQsEl || !justificacaoVdiQsEl || !resultadoVdiQlEl || !justificacaoVdiQlEl || !resultadoVdiFinalEl) return;
+            
+            const Ps = parseFloat(vdiPsEl.value) || 0;
+            const Pl = parseFloat(vdiPlEl.value) || 0;
+            const K1 = parseFloat(vdiK1El.value) || 0;
+            const K2 = parseFloat(vdiK2El.value) || 0;
+
+            // Sincronizar slider
+            vdiK1ValorEl.textContent = K1.toFixed(2);
+
+            // Cálculo Qs
+            const denominadorQs = (VDI_k * VDI_Cp * VDI_DeltaT);
+            const Qs = (Ps * K1 * K2) / denominadorQs;
+            resultadoVdiQsEl.textContent = `${Math.round(Qs)} m³/h`;
+            justificacaoVdiQsEl.textContent = `(${Ps}*${K1}*${K2}) / (${VDI_k.toFixed(1)}*${VDI_Cp}*${VDI_DeltaT}) = ${Math.round(Qs)} m³/h`;
+
+            // Cálculo Ql
+            const denominadorQl = (VDI_k * VDI_L * VDI_DeltaX_kg);
+            const Ql = (Pl * K1 * K2) / denominadorQl;
+            resultadoVdiQlEl.textContent = `${Math.round(Ql)} m³/h`;
+            justificacaoVdiQlEl.textContent = `(${Pl}*${K1}*${K2}) / (${VDI_k.toFixed(1)}*${VDI_L}*${VDI_DeltaX_kg}) = ${Math.round(Ql)} m³/h`;
+
+            // Resultado Final
+            const caudalFinal = Math.max(Qs, Ql);
+            resultadoVdiFinalEl.textContent = `${Math.round(caudalFinal)} m³/h`;
+
+            // Passa o valor para a tab 4 (Condutas)
+            if (caudalParaCondutaEl && caudalFinal > 0) {
+                caudalParaCondutaEl.value = Math.round(caudalFinal);
+                calculateDuct();
+            }
+        }
+
+        // ===== LÓGICA TAB 4: DIMENSIONAR CONDUTAS =====
+        function calculateDuct() {
+            if(!caudalParaCondutaEl || !resultadoCondutaEl || !justificacaoCondutaEl) return;
+            
+            const inputCaudal = parseFloat(caudalParaCondutaEl.value) || 0;
+            justificacaoCondutaEl.textContent = ''; // Limpa justificação
+            
+            if (inputCaudal === 0) {
+                resultadoCondutaEl.textContent = '--- mm';
+                return;
+            }
+
+            // Encontra o primeiro valor na tabela >= ao caudal de input
+            const suggestedDuct = ductData.find(d => d.caudal >= inputCaudal);
+
+            if (suggestedDuct) {
+                resultadoCondutaEl.textContent = `${suggestedDuct.diametro} mm`;
+                // Justificação
+                let caudalAnterior = 0;
+                let diametroAnterior = 0;
+                const index = ductData.findIndex(d => d.diametro === suggestedDuct.diametro);
+                if (index > 0) {
+                    caudalAnterior = ductData[index-1].caudal;
+                    diametroAnterior = ductData[index-1].diametro;
+                }
+                justificacaoCondutaEl.textContent = `Caudal ${inputCaudal} m³/h > ${caudalAnterior} m³/h (Ø${diametroAnterior}mm) e ≤ ${suggestedDuct.caudal} m³/h (Ø${suggestedDuct.diametro}mm).`;
+            
+            } else if (inputCaudal > ductData[ductData.length - 1].caudal) {
+                // Se for maior que o máximo da tabela
+                resultadoCondutaEl.textContent = `> ${ductData[ductData.length - 1].diametro} mm`;
+                justificacaoCondutaEl.textContent = `Caudal superior ao máximo da tabela (${ductData[ductData.length - 1].caudal} m³/h).`;
+            } else {
+                resultadoCondutaEl.textContent = '--- mm';
+            }
+        }
+
+
+        // ===== ASSOCIAR EVENT LISTENERS =====
+        // -- Página Inicial --
+        if (btnSeguinteEl) {
+            btnSeguinteEl.addEventListener('click', () => {
+                if (splashScreenEl) splashScreenEl.classList.add('hidden');
+                if (mainCalculatorEl) mainCalculatorEl.classList.remove('hidden');
+            });
+        }
+        
+        // Event Listeners Tab 1
+        if(tipoConveccaoEl) tipoConveccaoEl.addEventListener('change', suggestVelocity);
+        if(tipoHotteEl) tipoHotteEl.addEventListener('change', updateVelocityInputs);
+        [comprimentoLEl, profundidadePEl, alturaLivreEl, velocidadeArEl].forEach(el => {
+            if(el) el.addEventListener('input', calculateVelocity);
+        });
+
+        // Event Listeners Tab 2
+        if(addEquipamentoBtn) addEquipamentoBtn.addEventListener('click', addEquipment);
+        if(ksimSliderEl) ksimSliderEl.addEventListener('input', calculateEquipmentTotal);
+
+        // Event Listeners Tab 3
+        [vdiPsEl, vdiPlEl, vdiK1El, vdiK2El].forEach(el => {
+            if(el) el.addEventListener('input', calculateVDI);
+        });
+
+        // Event Listeners Tab 4
+        if(caudalParaCondutaEl) caudalParaCondutaEl.addEventListener('input', calculateDuct);
+        
+        
+        // ===== CHAMADAS INICIAIS =====
+        // -- Página Inicial --
+        if (splashDateEl) {
+            const today = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            splashDateEl.textContent = today.toLocaleDateString('pt-PT', options);
+        }
+
+        // -- Calculadora --
+        showTab('tabVelocidade');
+        updateVelocityInputs();
+        calculateEquipmentTotal();
+        renderEquipmentList();
+        calculateVDI();
+    });
+    </script>
+</body>
+</html>
